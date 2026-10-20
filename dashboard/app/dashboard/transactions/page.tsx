@@ -119,8 +119,10 @@ function TransactionsPageInner() {
   const userParam = searchParams.get("user") ?? "";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  // #795 — items-per-page state
+  const [txPage, setTxPage] = useState(0);
+  // #795 / #1043 — items-per-page state for each table
   const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE);
+  const [txPageSize, setTxPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const { data, loading, error, refresh } = usePolling(
     () => api.socialFeed(),
@@ -152,6 +154,7 @@ function TransactionsPageInner() {
 
   useEffect(() => {
     setPage(0);
+    setTxPage(0);
   }, [activeQuery]);
 
   const filtered = useMemo(() => {
@@ -166,6 +169,9 @@ function TransactionsPageInner() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice(page * pageSize, (page + 1) * pageSize);
+
+  const totalTxPages = Math.max(1, Math.ceil(filteredTx.length / txPageSize));
+  const paginatedTx = filteredTx.slice(txPage * txPageSize, (txPage + 1) * txPageSize);
 
   return (
     <div>
@@ -253,7 +259,7 @@ function TransactionsPageInner() {
                   </td>
                 </tr>
               ) : (
-                filteredTx.map((tx) => (
+                paginatedTx.map((tx) => (
                   <tr key={tx.id} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                       {format(new Date(tx.created_at), "MMM d, yyyy HH:mm")}
@@ -276,6 +282,17 @@ function TransactionsPageInner() {
             </tbody>
           </table>
         </div>
+        {/* #1043 — items-per-page selector and Prev/Next controls */}
+        <PaginationFooter
+          total={filteredTx.length}
+          page={txPage}
+          pageSize={txPageSize}
+          onPageSizeChange={(size) => {
+            setTxPageSize(size);
+            setTxPage(0);
+          }}
+          onPageChange={setTxPage}
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -377,18 +394,17 @@ function TransactionsPageInner() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <PaginationFooter
-            total={filtered.length}
-            page={page}
-            pageSize={pageSize}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(0);
-            }}
-            onPageChange={setPage}
-          />
-        )}
+        {/* #1043 — items-per-page selector and Prev/Next controls */}
+        <PaginationFooter
+          total={filtered.length}
+          page={page}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(0);
+          }}
+          onPageChange={setPage}
+        />
       </div>
       {selectedUser && (
         <PaymentDetailDialog
